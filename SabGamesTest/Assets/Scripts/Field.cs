@@ -1,14 +1,36 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class Field : MonoBehaviour
 {
+    public static Field Instance { get; private set; }
+    
     [SerializeField] private float width;
     [SerializeField] private float length;
 
     [SerializeField] private Unit unitPrefab;
     [SerializeField] private int unitsOnFieldAmount;
 
-    private Unit[] _units;
+    private List<Unit> _units;
+
+    private void OnEnable()
+    {
+        Unit.OnUnitDied += RemoveUnit;
+    }
+
+    private void OnDisable()
+    {
+        Unit.OnUnitDied -= RemoveUnit;
+    }
+
+    private void Awake()
+    {
+        Instance = this;
+        
+        DontDestroyOnLoad(gameObject);
+    }
 
     private void Start()
     {
@@ -19,7 +41,7 @@ public class Field : MonoBehaviour
 
     private void GenerateUnits()
     {
-        _units = new Unit[unitsOnFieldAmount];
+        _units = new List<Unit>(unitsOnFieldAmount);
 
         float fieldHalfWidth = width / 2;
         float fieldHalfLength = length / 2;
@@ -30,24 +52,58 @@ public class Field : MonoBehaviour
             float unitPosZ = Random.Range(-fieldHalfLength, fieldHalfLength);
             
             Unit newUnit = Instantiate(unitPrefab, new Vector3(unitPosX, 0, unitPosZ), Quaternion.identity);
+            newUnit.Setup(i);
 
-            _units[i] = newUnit;
-            
-            newUnit.Move(Vector3.zero);
+            _units.Add(newUnit);
         }
+    }
+
+    public Unit GetClosestTargetToUnit(Unit requestingUnit)
+    {
+        Unit targetUnit = null;
+
+        foreach (var unit in _units)
+        {
+            if (unit == requestingUnit)
+                continue;
+            
+            if (unit.TeamId == requestingUnit.TeamId)
+                continue;
+            
+            if (targetUnit == null)
+            {
+                targetUnit = unit;
+            }
+            else
+            {
+                var requestingUnitPosition = requestingUnit.transform.position;
+                
+                var vectorToCurrentTargetUnit = targetUnit.transform.position - requestingUnitPosition;
+                var vectorToNewTargetUnit = unit.transform.position - requestingUnitPosition;
+
+                if (vectorToNewTargetUnit.sqrMagnitude < vectorToCurrentTargetUnit.sqrMagnitude)
+                    targetUnit = unit;
+            }
+        }
+
+        return targetUnit;
+    }
+
+    private void RemoveUnit(Unit unit)
+    {
+        _units.Remove(unit);
     }
     
     // =========== Debug ============
     public void RegenerateUnits()
     {
-        for (var i = 0; i < _units.Length; i++)
+        foreach (var unit in _units)
         {
-            var unit = _units[i];
-            _units[i] = null;
-            
             Destroy(unit.gameObject);
         }
         
+        _units.Clear();
+
         GenerateUnits();
     }
 }
