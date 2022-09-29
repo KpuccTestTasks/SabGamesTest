@@ -10,67 +10,26 @@ public class Unit : MonoBehaviour
     
     private int _hp;
     private int _attackPower;
+    private UnitState _state;
 
-    private bool _isMooving;
+    public float TimeToNextAttack { get; private set; }
+    public Unit CurrentTarget { get; set; }
 
-    private float _timeToNextAttack;
-    private Unit _currentTarget;
-
-    private const float MoveSpeed = 8f;
+    public const float MoveSpeed = 8f;
+    
     private const float AttackCooldown = 1.5f;
     private const float AttackRadius = 1.5f;
 
     public static event Action<Unit> OnUnitDied;
-    
-    /*
-     * State machine
-     * 
-     * Look for enemy
-     * Move to enemy
-     * Attack enemy
-     */
 
     private void Update()
     {        
-        if (_timeToNextAttack > 0)
+        if (TimeToNextAttack > 0)
         {
-            _timeToNextAttack -= Time.deltaTime;
+            TimeToNextAttack -= Time.deltaTime;
         }
         
-        if (_currentTarget == null)
-        {
-            _currentTarget = Field.Instance.GetClosestTargetToUnit(this);
-
-            if (_currentTarget == null)
-                return;
-        }
-        
-        var distanceToTarget = (_currentTarget.transform.position - transform.position).magnitude;
-            
-        if (distanceToTarget > AttackRadius)
-        {
-            if (!_isMooving)
-            {
-                Move();
-            }
-        }
-        else if (_timeToNextAttack <= 0f)
-        {
-            AttackCurrentTarget();
-        }
-        
-        if (_isMooving)
-        {
-            var position = transform.position;
-            var direction = _currentTarget.transform.position - position;
-
-            var newPosition = Vector3.Lerp(position, position + direction.normalized, Time.deltaTime * MoveSpeed);
-            
-            transform.position = newPosition;
-
-            if (distanceToTarget <= AttackRadius)
-                StopMoving();
-        }
+        _state.Update();
     }
 
     public void Setup(int teamId, Color teamColor)
@@ -80,17 +39,14 @@ public class Unit : MonoBehaviour
         
         _hp = Random.Range(10, 30);
         _attackPower = Random.Range(2, 5);
-        _timeToNextAttack = 0;
+        TimeToNextAttack = 0;
+        
+        SetState(new LookingForTargetState(this));
     }
 
-    private void Move()
+    public void SetState(UnitState newState)
     {
-        _isMooving = true;
-    }
-
-    private void StopMoving()
-    {
-        _isMooving = false;
+        _state = newState;
     }
 
     private void ApplyDamage(int damage)
@@ -105,9 +61,16 @@ public class Unit : MonoBehaviour
         }
     }
 
-    private void AttackCurrentTarget()
+    public void AttackCurrentTarget()
     {
-        _currentTarget.ApplyDamage(_attackPower);
-        _timeToNextAttack = AttackCooldown;
+        CurrentTarget.ApplyDamage(_attackPower);
+        TimeToNextAttack = AttackCooldown;
+    }
+
+    public bool IsTargetInAttackRadius()
+    {
+        var distanceToTarget = (CurrentTarget.transform.position - transform.position).magnitude;
+
+        return distanceToTarget <= AttackRadius;
     }
 }
