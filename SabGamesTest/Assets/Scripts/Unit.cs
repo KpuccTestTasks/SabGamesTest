@@ -4,6 +4,8 @@ using Random = UnityEngine.Random;
 
 public class Unit : MonoBehaviour
 {
+    [SerializeField] private Renderer unitRenderer;
+    
     public int TeamId { get; private set; }
     
     private int _hp;
@@ -71,9 +73,10 @@ public class Unit : MonoBehaviour
         }
     }
 
-    public void Setup(int teamId)
+    public void Setup(int teamId, Color teamColor)
     {
         TeamId = teamId;
+        unitRenderer.material.color = teamColor;
         
         _hp = Random.Range(10, 30);
         _attackPower = Random.Range(2, 5);

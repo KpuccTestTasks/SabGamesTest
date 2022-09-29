@@ -12,6 +12,7 @@ public class Field : MonoBehaviour
 
     [SerializeField] private Unit unitPrefab;
     [SerializeField] private int unitsOnFieldAmount;
+    [SerializeField] private int teamSize;
 
     private List<Unit> _units;
 
@@ -45,6 +46,9 @@ public class Field : MonoBehaviour
 
         float fieldHalfWidth = width / 2;
         float fieldHalfLength = length / 2;
+
+        int teamId = -1;
+        Color teamColor = Color.black;
         
         for (int i = 0; i < unitsOnFieldAmount; i++)
         {
@@ -52,7 +56,16 @@ public class Field : MonoBehaviour
             float unitPosZ = Random.Range(-fieldHalfLength, fieldHalfLength);
             
             Unit newUnit = Instantiate(unitPrefab, new Vector3(unitPosX, 0, unitPosZ), Quaternion.identity);
-            newUnit.Setup(i);
+
+            int unitTeamId = i / teamSize;
+            
+            if (unitTeamId != teamId)
+            {
+                teamId = unitTeamId;
+                teamColor = new Color(GetRandomColorValue(), GetRandomColorValue(), GetRandomColorValue());
+            }
+            
+            newUnit.Setup(teamId, teamColor);
 
             _units.Add(newUnit);
         }
@@ -89,9 +102,29 @@ public class Field : MonoBehaviour
         return targetUnit;
     }
 
-    private void RemoveUnit(Unit unit)
+    private void RemoveUnit(Unit unitToRemove)
     {
-        _units.Remove(unit);
+        _units.Remove(unitToRemove);
+
+        int leftUnitTeamId = _units[0].TeamId;
+        bool isGameEnded = true;
+
+        foreach (var unit in _units)
+        {
+            if (unit.TeamId != leftUnitTeamId)
+            {
+                isGameEnded = false;
+                break;
+            }
+        }
+        
+        if (isGameEnded)
+            Debug.Log($"Team {leftUnitTeamId} wins!");
+    }
+
+    private float GetRandomColorValue()
+    {
+        return Random.Range(0f, 255f) / 255f;
     }
     
     // =========== Debug ============
