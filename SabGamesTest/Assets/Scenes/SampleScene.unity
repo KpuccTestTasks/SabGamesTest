@@ -769,10 +769,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be493410d8a784e7f86a7802fdeea393, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 60
-  length: 60
+  width: 40
+  length: 40
   unitPrefab: {fileID: 2655200067408270842, guid: 8cf2756d2261143d4bfaf3f396978569, type: 3}
-  unitsOnFieldAmount: 80
+  unitsOnFieldAmount: 20
   teamSize: 2
 --- !u!23 &1512232803
 MeshRenderer:
